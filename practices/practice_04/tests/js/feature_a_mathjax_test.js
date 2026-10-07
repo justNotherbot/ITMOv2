@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   try {
-    const res = await page.goto(`${baseUrl}/fourier`, { waitUntil: 'networkidle' });
+    const res = await page.goto(`${baseUrl}/fourier/`, { waitUntil: 'networkidle' });
     if (!res || res.status() >= 400) {
       throw new Error(`Page did not load correctly, status=${res ? res.status() : 'n/a'}`);
     }
