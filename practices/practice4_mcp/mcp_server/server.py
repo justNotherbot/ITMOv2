@@ -6,7 +6,6 @@ from typing import List, Tuple
 
 import numpy as np
 from mcp.server import MCPServer
-from mcp.types import ToolRequestBody
 from sympy import (
     symbols,
     sin,
@@ -195,12 +194,5 @@ def chebyshev_coefficients(
 
 
 if __name__ == "__main__":
-    # Allow `python server.py` to run a dev server quickly
-    import anyio
-    from mcp.server.stdio import stdio_server
-
-    async def main() -> None:
-        async with stdio_server(mcp):
-            await anyio.sleep_forever()
-
-    anyio.run(main)
+    # Default run: stdio transport. For HTTP, prefer `mcp run server.py --transport streamable-http`.
+    mcp.run()

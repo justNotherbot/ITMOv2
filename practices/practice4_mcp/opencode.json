@@ -37,15 +37,13 @@
     "fourier-chebyshev": {
       "type": "local",
       "command": [
-        "uv",
-        "run",
-        "mcp",
+        "mcp_server/.venv/bin/mcp",
         "run",
         "mcp_server/server.py",
         "--transport",
         "stdio"
       ],
-      "enabled": false
+      "enabled": true
     }
   }
 }
