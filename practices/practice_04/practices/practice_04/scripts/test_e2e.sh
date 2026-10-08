@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WITH_SERVER="${PROJECT_DIR}/.opencode/skills/webapp-testing/scripts/with_server.py"
 
-# Default base URL; tests can override by passing BASE_URL in env
+# Default base URL for tests; can be overridden by env
 : "${BASE_URL:=http://localhost:1254}"
 
 cd "${PROJECT_DIR}"
