@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
 (async () => {
-  const baseUrl = 'http://localhost:8000';
+  const baseUrl = process.env.BASE_URL || 'http://localhost:1254';
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   try {
