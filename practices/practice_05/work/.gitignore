@@ -1,0 +1,20 @@
+# Node artifacts
+node_modules/
+
+# Playwright caches
+playwright-report/
+.playwright/
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+*.egg-info/
+coverage/
+*.log
+.pytest_cache/
+
+# OS
+.DS_Store
