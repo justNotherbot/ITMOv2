@@ -29,6 +29,85 @@ class ShopTest(unittest.TestCase):
     def test_wrong_password_rejected(self):
         self.assertEqual(self.request("POST", "/login", {"username": "alice", "password": "wrong"})[0], 401)
 
+    def test_customer_cannot_access_other_customer_data(self):
+        alice = self.login()
+        self.assertEqual(self.request("GET", "/profile?id=2", headers=alice)[0], 403)
+        self.assertEqual(self.request("GET", "/orders", headers=alice)[1], [
+            {"id": 1, "owner": 1, "product": "chair", "price": 5000.0}
+        ])
+        self.assertEqual(self.request("GET", "/files?user=bob&path=receipt.txt", headers=alice)[0], 403)
+        self.assertEqual(self.request("GET", "/assistant/context?order_id=2", headers=alice)[0], 404)
+
+    def test_role_header_cannot_grant_staff_access(self):
+        alice = self.login()
+        self.assertEqual(self.request("GET", "/admin/export", headers={**alice, "X-Role": "staff"})[0], 403)
+
+    def test_order_price_is_taken_from_catalog(self):
+        status, order = self.request("POST", "/orders", {
+            "product": "lamp", "price": 1
+        }, self.login())
+        self.assertEqual(status, 201)
+        self.assertEqual(order["price"], 1500)
+
+    def test_sql_injection_does_not_bypass_authorization(self):
+        alice = self.login()
+        self.assertEqual(self.request("GET", "/profile?id=1%20OR%201=1", headers=alice)[0], 400)
+        self.assertEqual(self.request("GET", "/assistant/context?order_id=1%20OR%201=1", headers=alice)[0], 400)
+
+    def test_review_html_is_escaped(self):
+        self.request("POST", "/reviews", {"product": "chair", "text": "<script>alert(1)</script>"}, self.login())
+        body = self.request("GET", "/reviews/view", headers=self.login())[1]
+        self.assertNotIn("<script>", body)
+        self.assertIn("&lt;script&gt;", body)
+
+    def test_assistant_tools_are_authorized(self):
+        alice = self.login()
+        self.assertEqual(self.request("POST", "/assistant/execute", {}, alice)[0], 400)
+        self.assertEqual(self.request("POST", "/assistant/execute", {"decision": {"tool": "read_file", "arguments": []}}, alice)[0], 400)
+        self.assertEqual(self.request("POST", "/assistant/execute", {"decision": {"tool": "read_file", "arguments": {}}}, alice)[0], 400)
+        dangerous = [
+            {"tool": "export_profiles", "arguments": {}},
+            {"tool": "delete_tree", "arguments": {"path": "."}},
+            {"tool": "read_file", "arguments": {"path": "files/bob/receipt.txt"}},
+            {"tool": "read_file", "arguments": {"path": "private/operator-note.txt"}},
+            {"tool": "read_file", "arguments": {"path": "files/alice/../bob/receipt.txt"}},
+        ]
+        for decision in dangerous:
+            with self.subTest(decision=decision):
+                self.assertEqual(self.request("POST", "/assistant/execute", {"decision": decision}, alice)[0], 403)
+
+    def test_each_assistant_tool_is_checked_for_authenticated_roles(self):
+        alice = self.login()
+        staff = self.login("staff", "learn-staff")
+        self.assertEqual(self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "read_file", "arguments": {"path": "files/alice/receipt.txt"}}
+        }, staff)[0], 403)
+        self.assertEqual(self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "export_profiles", "arguments": {}}
+        }, staff)[0], 200)
+        self.assertEqual(self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "unknown", "arguments": {}}
+        }, alice)[0], 400)
+
+    def test_debug_logs_require_staff_and_redact_token(self):
+        alice = self.login()
+        self.assertEqual(self.request("GET", "/debug/logs", headers=alice)[0], 403)
+        staff = self.login("staff", "learn-staff")
+        status, logs = self.request("GET", "/debug/logs", headers=staff)
+        self.assertEqual(status, 200)
+        self.assertTrue(all(entry["headers"].get("X-Token") != alice["X-Token"] for entry in logs))
+
+    def test_debug_logs_redact_credentials(self):
+        self.login()
+        staff = self.login("staff", "learn-staff")
+        status, logs = self.request("GET", "/debug/logs", headers=staff)
+        self.assertEqual(status, 200)
+        login_bodies = [entry["body"] for entry in logs if entry["target"] == "/login"]
+        self.assertTrue(login_bodies)
+        self.assertTrue(all(body["password"] == "[REDACTED]" for body in login_bodies))
+        self.assertTrue(all("learn-alice" not in str(body) and "learn-staff" not in str(body)
+                            for body in login_bodies))
+
     def test_tokens_identify_distinct_users(self):
         alice, bob = self.login(), self.login("bob", "learn-bob")
         self.assertNotEqual(alice, bob)
