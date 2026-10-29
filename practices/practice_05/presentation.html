@@ -76,6 +76,11 @@
     code, .code { color: var(--lime); font: .9em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
     pre { overflow-x: auto; margin: 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; color: #e9f6cf; background: #090b1b; }
     .result { display: inline-block; margin-top: 14px; padding: 5px 10px; border-radius: 999px; color: #15220d; background: var(--lime); font: 800 .82rem ui-monospace, monospace; }
+    .platform-toggle { display: inline-flex; gap: 6px; margin-bottom: 24px; padding: 6px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.06); }
+    .platform-toggle button { padding: 9px 16px; border: 0; border-radius: 999px; color: var(--muted); background: transparent; font: inherit; cursor: pointer; }
+    .platform-toggle button[aria-selected="true"] { color: #14132c; background: var(--cyan); font-weight: 800; }
+    .platform-panel[hidden] { display: none; }
+    .command-note { margin: 10px 0 0; color: var(--muted); font-size: .9rem; }
     .timeline { display: grid; gap: 12px; }
     .step { display: grid; grid-template-columns: 100px 1fr; gap: 18px; align-items: start; padding: 17px 0; border-bottom: 1px solid var(--line); }
     .step:last-child { border-bottom: 0; }
@@ -179,15 +184,42 @@
 
     <section id="start">
       <div class="shell">
-        <div class="section-head"><h2>06 / Traceable startup</h2><p class="section-intro">The commands below are the same path used by the implementation and validation artifacts.</p></div>
-        <div class="grid">
-          <article class="card wide accent-cyan"><span class="number">FROM work/</span><h3>Run the FastAPI site</h3><pre><code>python3 -m venv .venv
-          <article class="card"><span class="number">VERIFY</span><h3>Run tests</h3><pre><code>PYTHONPATH=. .venv/bin/pytest -q</code></pre><span class="result">32 passed, 1 skipped</span></article>
-          <article class="card full"><span class="number">BROWSER CHECK</span><h3>Use managed server testing</h3><pre><code>python3 .opencode/skills/webapp-testing/scripts/with_server.py \
+        <div class="section-head"><h2>06 / Traceable startup</h2><p class="section-intro">Choose your operating system to see the commands for starting the site, running tests, and stopping the server.</p></div>
+        <div class="platform-toggle" role="tablist" aria-label="Operating system instructions">
+          <button id="linux-tab" type="button" role="tab" aria-selected="true" aria-controls="linux-panel">Linux / WSL</button>
+          <button id="windows-tab" type="button" role="tab" aria-selected="false" aria-controls="windows-panel">Windows PowerShell</button>
+        </div>
+        <div id="linux-panel" class="platform-panel" role="tabpanel" aria-labelledby="linux-tab">
+          <div class="grid">
+            <article class="card wide accent-cyan"><span class="number">LINUX / WSL · FROM work/</span><h3>Run the FastAPI site</h3><pre><code>.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000</code></pre><p class="command-note">Open <code>http://localhost:8000</code>. Keep this terminal open while the server runs.</p></article>
+            <article class="card"><span class="number">VERIFY</span><h3>Run tests</h3><pre><code>PYTHONPATH=. .venv/bin/pytest -q</code></pre><span class="result">32 passed, 1 skipped</span></article>
+            <article class="card"><span class="number">STOP</span><h3>Stop the server</h3><pre><code>Ctrl+C</code></pre><p class="command-note">Press <code>Ctrl+C</code> in the terminal running Uvicorn.</p></article>
+            <article class="card full"><span class="number">SMOKE CHECK</span><h3>Check the running server</h3><pre><code>curl -f http://localhost:8000/</code></pre><p class="command-note">Run this in a second terminal; the server should return the home page.</p></article>
+          </div>
+        </div>
+        <div id="windows-panel" class="platform-panel" role="tabpanel" aria-labelledby="windows-tab" hidden>
+          <div class="grid">
+            <article class="card wide accent-cyan"><span class="number">WINDOWS · FROM work\</span><h3>Run the FastAPI site</h3><pre><code>\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000</code></pre><p class="command-note">Open <code>http://localhost:8000</code>. If PowerShell blocks activation, run <code>Set-ExecutionPolicy -Scope Process Bypass</code> first.</p></article>
+            <article class="card"><span class="number">VERIFY</span><h3>Run tests</h3><pre><code>python -m pytest -q</code></pre><span class="result">32 passed, 1 skipped</span><p class="command-note">Run this from the <code>work</code> directory with the virtual environment activated.</p></article>
+            <article class="card"><span class="number">STOP</span><h3>Stop the server</h3><pre><code>Ctrl+C</code></pre><p class="command-note">Press <code>Ctrl+C</code> in the PowerShell window running Uvicorn.</p></article>
+            <article class="card full"><span class="number">BROWSER CHECK</span><h3>Run the UI checks</h3><pre><code>npm run test:e2e</code></pre><p class="command-note">Start the server first. This uses the project’s managed browser-test script.</p></article>
+          </div>
         </div>
       </div>
     </section>
   </main>
   <footer class="shell"><p><strong>Approximate / Learn</strong> · A spec-driven educational site for seeing how mathematics, interfaces, and evidence fit together.</p><p class="small">Project root: <a href="work/">practices/practice_05/work/</a> · Presentation source: <code>presentation.html</code></p></footer>
+  <script>
+    const platformTabs = document.querySelectorAll('.platform-toggle [role="tab"]');
+    platformTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        platformTabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+        document.querySelectorAll('.platform-panel').forEach((panel) => {
+          panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+        });
+      });
+    });
+  </script>
 </body>
 </html>
