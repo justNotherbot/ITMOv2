@@ -1,3 +1,5 @@
+"""Optional browser smoke test: run explicitly with TEST_BASE_URL and Playwright Chromium."""
+
 import os
 
 import pytest
