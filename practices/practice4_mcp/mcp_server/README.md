@@ -1,0 +1,1 @@
+# Fourier + Chebyshev MCP (Minimal)

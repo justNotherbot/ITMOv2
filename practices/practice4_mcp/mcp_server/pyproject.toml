@@ -1,0 +1,14 @@
+[project]
+name = "fourier-chebyshev-mcp"
+version = "0.1.0"
+description = "Minimal MCP server exposing Fourier and Chebyshev tools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp[cli]",
+  "numpy>=1.24",
+  "sympy>=1.12",
+]
+
+[tool.uv]
+package = true
